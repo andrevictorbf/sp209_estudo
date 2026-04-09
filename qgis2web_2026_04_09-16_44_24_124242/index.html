@@ -1,0 +1,1296 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <link rel="stylesheet" href="css/leaflet.photon.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.photon.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/AREADEINTERESSESP209copiarcopiarcopiar_1.js"></script>
+        <script src="data/RendaMdia_2.js"></script>
+        <script src="data/TotaldeApartamentos_3.js"></script>
+        <script src="data/PopulaoTotal_4.js"></script>
+        <script src="data/BUFFERSP209stats_5.js"></script>
+        <script src="data/PONTO_GEOCODIFICADO_6.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[-23.510769747810812,-46.61669706384071],[-23.468755217969267,-46.52772090081451]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // modify popup if contains media
+        function addClassToPopupIfMedia(content, popup) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var imgTd = tempDiv.querySelector('td img');
+            if (imgTd) {
+                var src = imgTd.getAttribute('src');
+                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp3|wav|ogg|aac)$/i.test(src)) {
+                    var audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = src;
+                    imgTd.parentNode.replaceChild(audio, imgTd);
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp4|webm|ogg|mov)$/i.test(src)) {
+                    var video = document.createElement('video');
+                    video.controls = true;
+                    video.src = src;
+                    video.style.width = "400px";
+                    video.style.height = "300px";
+                    video.style.maxHeight = "60vh";
+                    video.style.maxWidth = "60vw";
+                    imgTd.parentNode.replaceChild(video, imgTd);
+                    popup._contentNode.classList.add('media');
+                    // Aggiorna il popup quando il video carica i metadati
+                    video.addEventListener('loadedmetadata', function() {
+                        popup.update();
+                    });
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else {
+                    popup._contentNode.classList.remove('media');
+                }
+            } else {
+                popup._contentNode.classList.remove('media');
+            }
+        }
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_GoogleMaps_0');
+        map.getPane('pane_GoogleMaps_0').style.zIndex = 400;
+        var layer_GoogleMaps_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleMaps_0',
+            opacity: 1.0,
+            attribution: '',
+            minZoom: 1,
+            maxZoom: 28,
+        });
+        layer_GoogleMaps_0;
+        map.addLayer(layer_GoogleMaps_0);
+        function pop_AREADEINTERESSESP209copiarcopiarcopiar_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CD_SETOR'] !== null ? autolinker.link(String(feature.properties['CD_SETOR']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SITUACAO'] !== null ? autolinker.link(String(feature.properties['SITUACAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['AREA_KM2'] !== null ? autolinker.link(String(feature.properties['AREA_KM2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CD_REGIAO'] !== null ? autolinker.link(String(feature.properties['CD_REGIAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_REGIAO'] !== null ? autolinker.link(String(feature.properties['NM_REGIAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_UF'] !== null ? autolinker.link(String(feature.properties['NM_UF']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_MUN'] !== null ? autolinker.link(String(feature.properties['NM_MUN']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_DIST'] !== null ? autolinker.link(String(feature.properties['NM_DIST']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_SUBDIST'] !== null ? autolinker.link(String(feature.properties['NM_SUBDIST']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_BAIRRO'] !== null ? autolinker.link(String(feature.properties['NM_BAIRRO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_NU'] !== null ? autolinker.link(String(feature.properties['NM_NU']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_FCU'] !== null ? autolinker.link(String(feature.properties['NM_FCU']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CD_AGLOM'] !== null ? autolinker.link(String(feature.properties['CD_AGLOM']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_AGLOM'] !== null ? autolinker.link(String(feature.properties['NM_AGLOM']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_RGINT'] !== null ? autolinker.link(String(feature.properties['NM_RGINT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_RGI'] !== null ? autolinker.link(String(feature.properties['NM_RGI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_CONCURB'] !== null ? autolinker.link(String(feature.properties['NM_CONCURB']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['POP_TOTAL'] !== null ? autolinker.link(String(feature.properties['POP_TOTAL']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['POP_MASC'] !== null ? autolinker.link(String(feature.properties['POP_MASC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['POP_FEMI'] !== null ? autolinker.link(String(feature.properties['POP_FEMI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MORADOR_1'] !== null ? autolinker.link(String(feature.properties['MORADOR_1']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MORADOR_2'] !== null ? autolinker.link(String(feature.properties['MORADOR_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['RENDA_RESP'] !== null ? autolinker.link(String(feature.properties['RENDA_RESP']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TOTAL_APTO'] !== null ? autolinker.link(String(feature.properties['TOTAL_APTO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TOTAL_CASA'] !== null ? autolinker.link(String(feature.properties['TOTAL_CASA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TOTAL_DOMI'] !== null ? autolinker.link(String(feature.properties['TOTAL_DOMI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_AREADEINTERESSESP209copiarcopiarcopiar_1_0(feature) {
+            if (feature.properties['TOTAL_DOMI'] >= 0.000000 && feature.properties['TOTAL_DOMI'] <= 119.000000 ) {
+                return {
+                pane: 'pane_AREADEINTERESSESP209copiarcopiarcopiar_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(247,251,255,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['TOTAL_DOMI'] >= 119.000000 && feature.properties['TOTAL_DOMI'] <= 189.000000 ) {
+                return {
+                pane: 'pane_AREADEINTERESSESP209copiarcopiarcopiar_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(200,220,240,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['TOTAL_DOMI'] >= 189.000000 && feature.properties['TOTAL_DOMI'] <= 244.000000 ) {
+                return {
+                pane: 'pane_AREADEINTERESSESP209copiarcopiarcopiar_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(115,178,216,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['TOTAL_DOMI'] >= 244.000000 && feature.properties['TOTAL_DOMI'] <= 310.000000 ) {
+                return {
+                pane: 'pane_AREADEINTERESSESP209copiarcopiarcopiar_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(41,121,185,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['TOTAL_DOMI'] >= 310.000000 && feature.properties['TOTAL_DOMI'] <= 408.000000 ) {
+                return {
+                pane: 'pane_AREADEINTERESSESP209copiarcopiarcopiar_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(8,48,107,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+        }
+        map.createPane('pane_AREADEINTERESSESP209copiarcopiarcopiar_1');
+        map.getPane('pane_AREADEINTERESSESP209copiarcopiarcopiar_1').style.zIndex = 401;
+        map.getPane('pane_AREADEINTERESSESP209copiarcopiarcopiar_1').style['mix-blend-mode'] = 'normal';
+        var layer_AREADEINTERESSESP209copiarcopiarcopiar_1 = new L.geoJson(json_AREADEINTERESSESP209copiarcopiarcopiar_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_AREADEINTERESSESP209copiarcopiarcopiar_1',
+            layerName: 'layer_AREADEINTERESSESP209copiarcopiarcopiar_1',
+            pane: 'pane_AREADEINTERESSESP209copiarcopiarcopiar_1',
+            onEachFeature: pop_AREADEINTERESSESP209copiarcopiarcopiar_1,
+            style: style_AREADEINTERESSESP209copiarcopiarcopiar_1_0,
+        });
+        bounds_group.addLayer(layer_AREADEINTERESSESP209copiarcopiarcopiar_1);
+        map.addLayer(layer_AREADEINTERESSESP209copiarcopiarcopiar_1);
+        function pop_RendaMdia_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CD_SETOR'] !== null ? autolinker.link(String(feature.properties['CD_SETOR']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SITUACAO'] !== null ? autolinker.link(String(feature.properties['SITUACAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['AREA_KM2'] !== null ? autolinker.link(String(feature.properties['AREA_KM2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CD_REGIAO'] !== null ? autolinker.link(String(feature.properties['CD_REGIAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_REGIAO'] !== null ? autolinker.link(String(feature.properties['NM_REGIAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_UF'] !== null ? autolinker.link(String(feature.properties['NM_UF']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_MUN'] !== null ? autolinker.link(String(feature.properties['NM_MUN']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_DIST'] !== null ? autolinker.link(String(feature.properties['NM_DIST']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_SUBDIST'] !== null ? autolinker.link(String(feature.properties['NM_SUBDIST']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_BAIRRO'] !== null ? autolinker.link(String(feature.properties['NM_BAIRRO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_NU'] !== null ? autolinker.link(String(feature.properties['NM_NU']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_FCU'] !== null ? autolinker.link(String(feature.properties['NM_FCU']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CD_AGLOM'] !== null ? autolinker.link(String(feature.properties['CD_AGLOM']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_AGLOM'] !== null ? autolinker.link(String(feature.properties['NM_AGLOM']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_RGINT'] !== null ? autolinker.link(String(feature.properties['NM_RGINT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_RGI'] !== null ? autolinker.link(String(feature.properties['NM_RGI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_CONCURB'] !== null ? autolinker.link(String(feature.properties['NM_CONCURB']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['POP_TOTAL'] !== null ? autolinker.link(String(feature.properties['POP_TOTAL']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['POP_MASC'] !== null ? autolinker.link(String(feature.properties['POP_MASC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['POP_FEMI'] !== null ? autolinker.link(String(feature.properties['POP_FEMI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MORADOR_1'] !== null ? autolinker.link(String(feature.properties['MORADOR_1']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MORADOR_2'] !== null ? autolinker.link(String(feature.properties['MORADOR_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['RENDA_RESP'] !== null ? autolinker.link(String(feature.properties['RENDA_RESP']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TOTAL_APTO'] !== null ? autolinker.link(String(feature.properties['TOTAL_APTO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TOTAL_CASA'] !== null ? autolinker.link(String(feature.properties['TOTAL_CASA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TOTAL_DOMI'] !== null ? autolinker.link(String(feature.properties['TOTAL_DOMI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_RendaMdia_2_0(feature) {
+            if (feature.properties['RENDA_RESP'] >= 0.000000 && feature.properties['RENDA_RESP'] <= 2118.470000 ) {
+                return {
+                pane: 'pane_RendaMdia_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(247,251,255,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['RENDA_RESP'] >= 2118.470000 && feature.properties['RENDA_RESP'] <= 2804.660000 ) {
+                return {
+                pane: 'pane_RendaMdia_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(215,230,245,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['RENDA_RESP'] >= 2804.660000 && feature.properties['RENDA_RESP'] <= 3504.670000 ) {
+                return {
+                pane: 'pane_RendaMdia_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(175,209,231,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['RENDA_RESP'] >= 3504.670000 && feature.properties['RENDA_RESP'] <= 4321.890000 ) {
+                return {
+                pane: 'pane_RendaMdia_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(115,178,216,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['RENDA_RESP'] >= 4321.890000 && feature.properties['RENDA_RESP'] <= 5722.860000 ) {
+                return {
+                pane: 'pane_RendaMdia_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(62,142,196,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['RENDA_RESP'] >= 5722.860000 && feature.properties['RENDA_RESP'] <= 8327.710000 ) {
+                return {
+                pane: 'pane_RendaMdia_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(22,99,170,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['RENDA_RESP'] >= 8327.710000 && feature.properties['RENDA_RESP'] <= 12083.980000 ) {
+                return {
+                pane: 'pane_RendaMdia_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(8,48,107,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+        }
+        map.createPane('pane_RendaMdia_2');
+        map.getPane('pane_RendaMdia_2').style.zIndex = 402;
+        map.getPane('pane_RendaMdia_2').style['mix-blend-mode'] = 'normal';
+        var layer_RendaMdia_2 = new L.geoJson(json_RendaMdia_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_RendaMdia_2',
+            layerName: 'layer_RendaMdia_2',
+            pane: 'pane_RendaMdia_2',
+            onEachFeature: pop_RendaMdia_2,
+            style: style_RendaMdia_2_0,
+        });
+        bounds_group.addLayer(layer_RendaMdia_2);
+        map.addLayer(layer_RendaMdia_2);
+        function pop_TotaldeApartamentos_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CD_SETOR'] !== null ? autolinker.link(String(feature.properties['CD_SETOR']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SITUACAO'] !== null ? autolinker.link(String(feature.properties['SITUACAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['AREA_KM2'] !== null ? autolinker.link(String(feature.properties['AREA_KM2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CD_REGIAO'] !== null ? autolinker.link(String(feature.properties['CD_REGIAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_REGIAO'] !== null ? autolinker.link(String(feature.properties['NM_REGIAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_UF'] !== null ? autolinker.link(String(feature.properties['NM_UF']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_MUN'] !== null ? autolinker.link(String(feature.properties['NM_MUN']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_DIST'] !== null ? autolinker.link(String(feature.properties['NM_DIST']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_SUBDIST'] !== null ? autolinker.link(String(feature.properties['NM_SUBDIST']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_BAIRRO'] !== null ? autolinker.link(String(feature.properties['NM_BAIRRO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_NU'] !== null ? autolinker.link(String(feature.properties['NM_NU']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_FCU'] !== null ? autolinker.link(String(feature.properties['NM_FCU']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CD_AGLOM'] !== null ? autolinker.link(String(feature.properties['CD_AGLOM']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_AGLOM'] !== null ? autolinker.link(String(feature.properties['NM_AGLOM']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_RGINT'] !== null ? autolinker.link(String(feature.properties['NM_RGINT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_RGI'] !== null ? autolinker.link(String(feature.properties['NM_RGI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NM_CONCURB'] !== null ? autolinker.link(String(feature.properties['NM_CONCURB']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['POP_TOTAL'] !== null ? autolinker.link(String(feature.properties['POP_TOTAL']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['POP_MASC'] !== null ? autolinker.link(String(feature.properties['POP_MASC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['POP_FEMI'] !== null ? autolinker.link(String(feature.properties['POP_FEMI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MORADOR_1'] !== null ? autolinker.link(String(feature.properties['MORADOR_1']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MORADOR_2'] !== null ? autolinker.link(String(feature.properties['MORADOR_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['RENDA_RESP'] !== null ? autolinker.link(String(feature.properties['RENDA_RESP']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TOTAL_APTO'] !== null ? autolinker.link(String(feature.properties['TOTAL_APTO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TOTAL_CASA'] !== null ? autolinker.link(String(feature.properties['TOTAL_CASA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TOTAL_DOMI'] !== null ? autolinker.link(String(feature.properties['TOTAL_DOMI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_TotaldeApartamentos_3_0(feature) {
+            if (feature.properties['TOTAL_APTO'] >= 0.000000 && feature.properties['TOTAL_APTO'] <= 16.000000 ) {
+                return {
+                pane: 'pane_TotaldeApartamentos_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(247,251,255,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['TOTAL_APTO'] >= 16.000000 && feature.properties['TOTAL_APTO'] <= 57.000000 ) {
+                return {
+                pane: 'pane_TotaldeApartamentos_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(200,220,240,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['TOTAL_APTO'] >= 57.000000 && feature.properties['TOTAL_APTO'] <= 119.000000 ) {
+                return {
+                pane: 'pane_TotaldeApartamentos_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(115,178,216,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['TOTAL_APTO'] >= 119.000000 && feature.properties['TOTAL_APTO'] <= 173.000000 ) {
+                return {
+                pane: 'pane_TotaldeApartamentos_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(41,121,185,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['TOTAL_APTO'] >= 173.000000 && feature.properties['TOTAL_APTO'] <= 274.000000 ) {
+                return {
+                pane: 'pane_TotaldeApartamentos_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(8,48,107,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+        }
+        map.createPane('pane_TotaldeApartamentos_3');
+        map.getPane('pane_TotaldeApartamentos_3').style.zIndex = 403;
+        map.getPane('pane_TotaldeApartamentos_3').style['mix-blend-mode'] = 'normal';
+        var layer_TotaldeApartamentos_3 = new L.geoJson(json_TotaldeApartamentos_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_TotaldeApartamentos_3',
+            layerName: 'layer_TotaldeApartamentos_3',
+            pane: 'pane_TotaldeApartamentos_3',
+            onEachFeature: pop_TotaldeApartamentos_3,
+            style: style_TotaldeApartamentos_3_0,
+        });
+        bounds_group.addLayer(layer_TotaldeApartamentos_3);
+        map.addLayer(layer_TotaldeApartamentos_3);
+        function pop_PopulaoTotal_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">CD_SETOR</th>\
+                        <td>' + (feature.properties['CD_SETOR'] !== null ? autolinker.link(String(feature.properties['CD_SETOR']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SITUACAO</th>\
+                        <td>' + (feature.properties['SITUACAO'] !== null ? autolinker.link(String(feature.properties['SITUACAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">AREA_KM2</th>\
+                        <td>' + (feature.properties['AREA_KM2'] !== null ? autolinker.link(String(feature.properties['AREA_KM2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CD_REGIAO</th>\
+                        <td>' + (feature.properties['CD_REGIAO'] !== null ? autolinker.link(String(feature.properties['CD_REGIAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_REGIAO</th>\
+                        <td>' + (feature.properties['NM_REGIAO'] !== null ? autolinker.link(String(feature.properties['NM_REGIAO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_UF</th>\
+                        <td>' + (feature.properties['NM_UF'] !== null ? autolinker.link(String(feature.properties['NM_UF']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_MUN</th>\
+                        <td>' + (feature.properties['NM_MUN'] !== null ? autolinker.link(String(feature.properties['NM_MUN']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_DIST</th>\
+                        <td>' + (feature.properties['NM_DIST'] !== null ? autolinker.link(String(feature.properties['NM_DIST']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_SUBDIST</th>\
+                        <td>' + (feature.properties['NM_SUBDIST'] !== null ? autolinker.link(String(feature.properties['NM_SUBDIST']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_BAIRRO</th>\
+                        <td>' + (feature.properties['NM_BAIRRO'] !== null ? autolinker.link(String(feature.properties['NM_BAIRRO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_NU</th>\
+                        <td>' + (feature.properties['NM_NU'] !== null ? autolinker.link(String(feature.properties['NM_NU']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_FCU</th>\
+                        <td>' + (feature.properties['NM_FCU'] !== null ? autolinker.link(String(feature.properties['NM_FCU']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">CD_AGLOM</th>\
+                        <td>' + (feature.properties['CD_AGLOM'] !== null ? autolinker.link(String(feature.properties['CD_AGLOM']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_AGLOM</th>\
+                        <td>' + (feature.properties['NM_AGLOM'] !== null ? autolinker.link(String(feature.properties['NM_AGLOM']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_RGINT</th>\
+                        <td>' + (feature.properties['NM_RGINT'] !== null ? autolinker.link(String(feature.properties['NM_RGINT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_RGI</th>\
+                        <td>' + (feature.properties['NM_RGI'] !== null ? autolinker.link(String(feature.properties['NM_RGI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NM_CONCURB</th>\
+                        <td>' + (feature.properties['NM_CONCURB'] !== null ? autolinker.link(String(feature.properties['NM_CONCURB']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">POP_TOTAL</th>\
+                        <td>' + (feature.properties['POP_TOTAL'] !== null ? autolinker.link(String(feature.properties['POP_TOTAL']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">POP_MASC</th>\
+                        <td>' + (feature.properties['POP_MASC'] !== null ? autolinker.link(String(feature.properties['POP_MASC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">POP_FEMI</th>\
+                        <td>' + (feature.properties['POP_FEMI'] !== null ? autolinker.link(String(feature.properties['POP_FEMI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">MORADOR_1</th>\
+                        <td>' + (feature.properties['MORADOR_1'] !== null ? autolinker.link(String(feature.properties['MORADOR_1']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">MORADOR_2</th>\
+                        <td>' + (feature.properties['MORADOR_2'] !== null ? autolinker.link(String(feature.properties['MORADOR_2']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">RENDA_RESP</th>\
+                        <td>' + (feature.properties['RENDA_RESP'] !== null ? autolinker.link(String(feature.properties['RENDA_RESP']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">TOTAL_APTO</th>\
+                        <td>' + (feature.properties['TOTAL_APTO'] !== null ? autolinker.link(String(feature.properties['TOTAL_APTO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">TOTAL_CASA</th>\
+                        <td>' + (feature.properties['TOTAL_CASA'] !== null ? autolinker.link(String(feature.properties['TOTAL_CASA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">TOTAL_DOMI</th>\
+                        <td>' + (feature.properties['TOTAL_DOMI'] !== null ? autolinker.link(String(feature.properties['TOTAL_DOMI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PopulaoTotal_4_0(feature) {
+            if (feature.properties['POP_TOTAL'] >= 0.000000 && feature.properties['POP_TOTAL'] <= 287.000000 ) {
+                return {
+                pane: 'pane_PopulaoTotal_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(247,251,255,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['POP_TOTAL'] >= 287.000000 && feature.properties['POP_TOTAL'] <= 452.000000 ) {
+                return {
+                pane: 'pane_PopulaoTotal_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(200,220,240,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['POP_TOTAL'] >= 452.000000 && feature.properties['POP_TOTAL'] <= 596.000000 ) {
+                return {
+                pane: 'pane_PopulaoTotal_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(115,178,216,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['POP_TOTAL'] >= 596.000000 && feature.properties['POP_TOTAL'] <= 759.000000 ) {
+                return {
+                pane: 'pane_PopulaoTotal_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(41,121,185,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+            if (feature.properties['POP_TOTAL'] >= 759.000000 && feature.properties['POP_TOTAL'] <= 1194.000000 ) {
+                return {
+                pane: 'pane_PopulaoTotal_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.44799999999999995)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(8,48,107,0.44799999999999995)',
+                interactive: true,
+            }
+            }
+        }
+        map.createPane('pane_PopulaoTotal_4');
+        map.getPane('pane_PopulaoTotal_4').style.zIndex = 404;
+        map.getPane('pane_PopulaoTotal_4').style['mix-blend-mode'] = 'normal';
+        var layer_PopulaoTotal_4 = new L.geoJson(json_PopulaoTotal_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PopulaoTotal_4',
+            layerName: 'layer_PopulaoTotal_4',
+            pane: 'pane_PopulaoTotal_4',
+            onEachFeature: pop_PopulaoTotal_4,
+            style: style_PopulaoTotal_4_0,
+        });
+        bounds_group.addLayer(layer_PopulaoTotal_4);
+        map.addLayer(layer_PopulaoTotal_4);
+        function pop_BUFFERSP209stats_5(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">endereco</th>\
+                        <td>' + (feature.properties['endereco'] !== null ? autolinker.link(String(feature.properties['endereco']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">bairro</th>\
+                        <td>' + (feature.properties['bairro'] !== null ? autolinker.link(String(feature.properties['bairro']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">raio_m</th>\
+                        <td>' + (feature.properties['raio_m'] !== null ? autolinker.link(String(feature.properties['raio_m']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">POP_TOTAL_sum</th>\
+                        <td>' + (feature.properties['POP_TOTAL_sum'] !== null ? autolinker.link(String(feature.properties['POP_TOTAL_sum']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">POP_MASC_sum</th>\
+                        <td>' + (feature.properties['POP_MASC_sum'] !== null ? autolinker.link(String(feature.properties['POP_MASC_sum']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">POP_FEMI_sum</th>\
+                        <td>' + (feature.properties['POP_FEMI_sum'] !== null ? autolinker.link(String(feature.properties['POP_FEMI_sum']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">MORADOR_1_sum</th>\
+                        <td>' + (feature.properties['MORADOR_1_sum'] !== null ? autolinker.link(String(feature.properties['MORADOR_1_sum']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">MORADOR_2_sum</th>\
+                        <td>' + (feature.properties['MORADOR_2_sum'] !== null ? autolinker.link(String(feature.properties['MORADOR_2_sum']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">TOTAL_APTO_sum</th>\
+                        <td>' + (feature.properties['TOTAL_APTO_sum'] !== null ? autolinker.link(String(feature.properties['TOTAL_APTO_sum']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">TOTAL_CASA_sum</th>\
+                        <td>' + (feature.properties['TOTAL_CASA_sum'] !== null ? autolinker.link(String(feature.properties['TOTAL_CASA_sum']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">TOTAL_DOMI_sum</th>\
+                        <td>' + (feature.properties['TOTAL_DOMI_sum'] !== null ? autolinker.link(String(feature.properties['TOTAL_DOMI_sum']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">RENDA_RESP_mean</th>\
+                        <td>' + (feature.properties['RENDA_RESP_mean'] !== null ? autolinker.link(String(feature.properties['RENDA_RESP_mean']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_BUFFERSP209stats_5_0() {
+            return {
+                pane: 'pane_BUFFERSP209stats_5',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '5.0,1.0',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(231,113,72,0.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_BUFFERSP209stats_5');
+        map.getPane('pane_BUFFERSP209stats_5').style.zIndex = 405;
+        map.getPane('pane_BUFFERSP209stats_5').style['mix-blend-mode'] = 'normal';
+        var layer_BUFFERSP209stats_5 = new L.geoJson(json_BUFFERSP209stats_5, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_BUFFERSP209stats_5',
+            layerName: 'layer_BUFFERSP209stats_5',
+            pane: 'pane_BUFFERSP209stats_5',
+            onEachFeature: pop_BUFFERSP209stats_5,
+            style: style_BUFFERSP209stats_5_0,
+        });
+        bounds_group.addLayer(layer_BUFFERSP209stats_5);
+        map.addLayer(layer_BUFFERSP209stats_5);
+        function pop_PONTO_GEOCODIFICADO_6(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">endereco</th>\
+                        <td>' + (feature.properties['endereco'] !== null ? autolinker.link(String(feature.properties['endereco']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">bairro</th>\
+                        <td>' + (feature.properties['bairro'] !== null ? autolinker.link(String(feature.properties['bairro']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">raio_m</th>\
+                        <td>' + (feature.properties['raio_m'] !== null ? autolinker.link(String(feature.properties['raio_m']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PONTO_GEOCODIFICADO_6_0() {
+            return {
+                pane: 'pane_PONTO_GEOCODIFICADO_6',
+        rotationAngle: 0.0,
+        rotationOrigin: 'center center',
+        icon: L.icon({
+            iconUrl: 'markers/PONTO_GEOCODIFICADO_6.svg',
+            iconSize: [26.599999999999998, 26.599999999999998]
+        }),
+                interactive: true,
+            }
+        }
+        map.createPane('pane_PONTO_GEOCODIFICADO_6');
+        map.getPane('pane_PONTO_GEOCODIFICADO_6').style.zIndex = 406;
+        map.getPane('pane_PONTO_GEOCODIFICADO_6').style['mix-blend-mode'] = 'normal';
+        var layer_PONTO_GEOCODIFICADO_6 = new L.geoJson(json_PONTO_GEOCODIFICADO_6, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PONTO_GEOCODIFICADO_6',
+            layerName: 'layer_PONTO_GEOCODIFICADO_6',
+            pane: 'pane_PONTO_GEOCODIFICADO_6',
+            onEachFeature: pop_PONTO_GEOCODIFICADO_6,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.marker(latlng, style_PONTO_GEOCODIFICADO_6_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_PONTO_GEOCODIFICADO_6);
+        map.addLayer(layer_PONTO_GEOCODIFICADO_6);
+        var overlaysTree = [
+            {label: '<img src="legend/PONTO_GEOCODIFICADO_6.png" /> PONTO_GEOCODIFICADO', layer: layer_PONTO_GEOCODIFICADO_6},
+            {label: '<img src="legend/BUFFERSP209stats_5.png" /> BUFFER - SP209 (stats)', layer: layer_BUFFERSP209stats_5},
+            {label: 'População Total<br /><table><tr><td style="text-align: center;"><img src="legend/PopulaoTotal_4_02870.png" /></td><td>0 - 287</td></tr><tr><td style="text-align: center;"><img src="legend/PopulaoTotal_4_2874521.png" /></td><td>287 - 452</td></tr><tr><td style="text-align: center;"><img src="legend/PopulaoTotal_4_4525962.png" /></td><td>452 - 596</td></tr><tr><td style="text-align: center;"><img src="legend/PopulaoTotal_4_5967593.png" /></td><td>596 - 759</td></tr><tr><td style="text-align: center;"><img src="legend/PopulaoTotal_4_75911944.png" /></td><td>759 - 1194</td></tr></table>', layer: layer_PopulaoTotal_4},
+            {label: 'Total de Apartamentos<br /><table><tr><td style="text-align: center;"><img src="legend/TotaldeApartamentos_3_0160.png" /></td><td>0 - 16</td></tr><tr><td style="text-align: center;"><img src="legend/TotaldeApartamentos_3_16571.png" /></td><td>16 - 57</td></tr><tr><td style="text-align: center;"><img src="legend/TotaldeApartamentos_3_571192.png" /></td><td>57 - 119</td></tr><tr><td style="text-align: center;"><img src="legend/TotaldeApartamentos_3_1191733.png" /></td><td>119 - 173</td></tr><tr><td style="text-align: center;"><img src="legend/TotaldeApartamentos_3_1732744.png" /></td><td>173 - 274</td></tr></table>', layer: layer_TotaldeApartamentos_3},
+            {label: 'Renda Média<br /><table><tr><td style="text-align: center;"><img src="legend/RendaMdia_2_02118470.png" /></td><td>0 - 2118,47</td></tr><tr><td style="text-align: center;"><img src="legend/RendaMdia_2_2118472804661.png" /></td><td>2118,47 - 2804,66</td></tr><tr><td style="text-align: center;"><img src="legend/RendaMdia_2_2804663504672.png" /></td><td>2804,66 - 3504,67</td></tr><tr><td style="text-align: center;"><img src="legend/RendaMdia_2_3504674321893.png" /></td><td>3504,67 - 4321,89</td></tr><tr><td style="text-align: center;"><img src="legend/RendaMdia_2_4321895722864.png" /></td><td>4321,89 - 5722,86</td></tr><tr><td style="text-align: center;"><img src="legend/RendaMdia_2_5722868327715.png" /></td><td>5722,86 - 8327,71</td></tr><tr><td style="text-align: center;"><img src="legend/RendaMdia_2_83277112083986.png" /></td><td>8327,71 - 12083,98</td></tr></table>', layer: layer_RendaMdia_2},
+            {label: 'AREA DE INTERESSE - SP209  copiar  copiar  copiar<br /><table><tr><td style="text-align: center;"><img src="legend/AREADEINTERESSESP209copiarcopiarcopiar_1_01190.png" /></td><td>0 - 119</td></tr><tr><td style="text-align: center;"><img src="legend/AREADEINTERESSESP209copiarcopiarcopiar_1_1191891.png" /></td><td>119 - 189</td></tr><tr><td style="text-align: center;"><img src="legend/AREADEINTERESSESP209copiarcopiarcopiar_1_1892442.png" /></td><td>189 - 244</td></tr><tr><td style="text-align: center;"><img src="legend/AREADEINTERESSESP209copiarcopiarcopiar_1_2443103.png" /></td><td>244 - 310</td></tr><tr><td style="text-align: center;"><img src="legend/AREADEINTERESSESP209copiarcopiarcopiar_1_3104084.png" /></td><td>310 - 408</td></tr></table>', layer: layer_AREADEINTERESSESP209copiarcopiarcopiar_1},
+            {label: "Google Maps", layer: layer_GoogleMaps_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"NM_FCU": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_NM_FCU = document.createElement('div');
+            div_NM_FCU.id = "div_NM_FCU";
+            div_NM_FCU.className= "filterselect";
+            document.getElementById("menu").appendChild(div_NM_FCU);
+            sel_NM_FCU = document.createElement('select');
+            sel_NM_FCU.multiple = true;
+            sel_NM_FCU.size = 10;
+            sel_NM_FCU.id = "sel_NM_FCU";
+            var NM_FCU_options_str = "<option value='' unselected></option>";
+            sel_NM_FCU.onchange = function(){filterFunc()};
+            NM_FCU_options_str  += '<option value="NULL">NULL</option>';
+            NM_FCU_options_str  += '<option value="Augusto Montenegro">Augusto Montenegro</option>';
+            NM_FCU_options_str  += '<option value="Avenida João Simão de Castro">Avenida João Simão de Castro</option>';
+            NM_FCU_options_str  += '<option value="Erótides de Campos">Erótides de Campos</option>';
+            NM_FCU_options_str  += '<option value="Esplanada das Bandeiras/Vila Saiago">Esplanada das Bandeiras/Vila Saiago</option>';
+            NM_FCU_options_str  += '<option value="Estrela">Estrela</option>';
+            NM_FCU_options_str  += '<option value="Francisco Alves Bezerra II">Francisco Alves Bezerra II</option>';
+            NM_FCU_options_str  += '<option value="Pedro Paulo Lagreca Neto">Pedro Paulo Lagreca Neto</option>';
+            NM_FCU_options_str  += '<option value="Santa Angelina">Santa Angelina</option>';
+            NM_FCU_options_str  += '<option value="Vila Flora">Vila Flora</option>';
+            NM_FCU_options_str  += '<option value="Vila São Rafael / Jardim Vila Galvão II">Vila São Rafael / Jardim Vila Galvão II</option>';
+            NM_FCU_options_str  += '<option value="Violão I">Violão I</option>';
+            NM_FCU_options_str  += '<option value="Violão II">Violão II</option>';
+            sel_NM_FCU.innerHTML = NM_FCU_options_str;
+            div_NM_FCU.appendChild(sel_NM_FCU);
+            var lab_NM_FCU = document.createElement('div');
+            lab_NM_FCU.innerHTML = 'NM_FCU';
+            lab_NM_FCU.className = 'filterlabel';
+            div_NM_FCU.appendChild(lab_NM_FCU);
+            var reset_NM_FCU = document.createElement('div');
+            reset_NM_FCU.innerHTML = 'clear filter';
+            reset_NM_FCU.className = 'filterlabel';
+            reset_NM_FCU.onclick = function() {
+                var options = document.getElementById("sel_NM_FCU").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_NM_FCU.appendChild(reset_NM_FCU);
+        </script>        
+    </body>
+</html>
